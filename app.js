@@ -109,15 +109,23 @@
   /* ---------- Ses (kesim tıkı) ---------- */
   let actx = null, adest = null, clickBuf = null;
   function ensureAudio() {
-    if (!actx) {
-      actx = new (window.AudioContext || window.webkitAudioContext)();
-      adest = actx.createMediaStreamDestination();
-      const len = Math.floor(actx.sampleRate * 0.045);
-      clickBuf = actx.createBuffer(1, len, actx.sampleRate);
-      const d = clickBuf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 5);
+    try {
+      if (!actx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        actx = new AudioContextClass();
+        adest = actx.createMediaStreamDestination();
+        const len = Math.floor(actx.sampleRate * 0.045);
+        clickBuf = actx.createBuffer(1, len, actx.sampleRate);
+        const d = clickBuf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 5);
+      }
+      if (actx && actx.state === 'suspended') {
+        actx.resume().catch(() => {});
+      }
+    } catch (e) {
+      // AudioContext autoplay kısıtlaması nedeniyle kullanıcı etkileşimi bekleniyor olabilir
     }
-    if (actx.state === 'suspended') actx.resume();
   }
   function click() {
     if (!state.sound || !actx || actx.state !== 'running') return;
@@ -351,6 +359,15 @@
   /* ---------- Video dışa aktarma (WebCodecs MP4 & MediaRecorder Fallback) ---------- */
   let recorder = null, chunks = [], stopping = false;
 
+  function setRecStatus(visible, text) {
+    const overlay = $('#recOverlay');
+    if (overlay) {
+      overlay.hidden = !visible;
+      const recText = $('#recText') || overlay.querySelector('.mono');
+      if (recText && text) recText.textContent = text;
+    }
+  }
+
   async function findSupportedVideoConfig(width, height) {
     if (typeof VideoEncoder === 'undefined') return null;
     const fpsCandidates = [60, 30];
@@ -484,8 +501,7 @@
     const btn = $('#exportBtn');
     btn.disabled = true;
     btn.querySelector('span').textContent = 'Hazırlanıyor…';
-    $('#recOverlay').hidden = false;
-    $('#recText').textContent = 'HAZIRLANIYOR';
+    setRecStatus(true, 'HAZIRLANIYOR');
 
     const width = W % 2 === 0 ? W : W - 1;
     const height = H % 2 === 0 ? H : H - 1;
@@ -592,7 +608,7 @@
         videoFrame.close();
 
         const pct = Math.round(((i + 1) / totalFrames) * 100);
-        $('#recText').textContent = `KAYDEDİLİYOR %${pct}`;
+        setRecStatus(true, `KAYDEDİLİYOR %${pct}`);
         btn.querySelector('span').textContent = `MP4 Aktarılıyor… %${pct}`;
 
         if (videoEncoder.encodeQueueSize > 5) {
@@ -616,7 +632,7 @@
       }
 
       btn.querySelector('span').textContent = 'Tamamlanıyor…';
-      $('#recText').textContent = 'TAMAMLANDI';
+      setRecStatus(true, 'TAMAMLANDI');
 
       await videoEncoder.flush();
       if (audioEncoder) {
@@ -636,7 +652,7 @@
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     } finally {
       isExporting = false;
-      $('#recOverlay').hidden = true;
+      setRecStatus(false);
       btn.disabled = false;
       btn.querySelector('span').textContent = 'Videoyu indir';
       if (wasPlaying) setPlaying(true);
@@ -696,7 +712,7 @@
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       recorder = null;
       stopping = false;
-      $('#recOverlay').hidden = true;
+      setRecStatus(false);
       btn.disabled = false;
       btn.querySelector('span').textContent = 'Videoyu indir';
     };
@@ -704,8 +720,7 @@
     setPlaying(true);
     seekTo(0);
     recorder.start(250);
-    $('#recOverlay').hidden = false;
-    $('#recText').textContent = 'KAYDEDİLİYOR';
+    setRecStatus(true, 'KAYDEDİLİYOR');
     btn.querySelector('span').textContent = 'Kaydediliyor…';
   }
 
@@ -733,7 +748,7 @@
       } catch (err) {
         console.warn('WebCodecs dışa aktarma başarısız oldu, MediaRecorder deneniyor:', err);
         isExporting = false;
-        $('#recOverlay').hidden = true;
+        setRecStatus(false);
         $('#exportBtn').disabled = false;
         $('#exportBtn').querySelector('span').textContent = 'Videoyu indir';
       }
