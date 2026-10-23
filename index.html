@@ -43,7 +43,7 @@
     <!-- KONTROLLER -->
     <aside class="panel" aria-label="Ayarlar">
       <h1 class="panel-title">Text <em>Match Cut</em></h1>
-      <p class="panel-sub">Kelimelerini yaz, temayı seç. Kelime ortada sabit kalır, dünya etrafında değişir.</p>
+      <p class="panel-sub">Kelimeleri ayırmak için virgül (,) kullan.</p>
 
       <section class="group">
         <label class="label" for="words"><span>01</span> Kelimeler</label>
@@ -77,7 +77,7 @@
         </div>
         <div class="slider">
           <div class="slider-head"><span>Kelime boyutu</span><b class="mono" id="zoomVal">100%</b></div>
-          <input type="range" id="zoom" min="50" max="180" step="5" value="100" />
+          <input type="range" id="zoom" min="20" max="300" step="5" value="100" />
         </div>
       </section>
 
@@ -106,7 +106,8 @@
 
       <section class="group" id="groupWordStampColor" style="display: none;">
         <div class="label"><span>05</span> Word Stamp Kelime Renkleri</div>
-        <p class="hint" style="margin-bottom: 8px;">Seçtiğin renkler sırayla kelimelere uygulanır (1. kelime, 2. kelime…):</p>
+        <p class="hint" style="margin-bottom: 8px;">Seçtiğin renkler sırayla kelimelere uygulanır (1. kelime, 2.
+          kelime…):</p>
 
         <!-- Seçili renk sıraları -->
         <div class="stamp-seq-wrap">
@@ -127,7 +128,8 @@
             <button data-c="#ffd166" style="--c:#ffd166" title="Sarı ekle" aria-label="Sarı"></button>
             <button data-c="#ffffff" style="--c:#ffffff" title="Beyaz ekle" aria-label="Beyaz"></button>
             <button data-c="#16191d" style="--c:#16191d" title="Siyah ekle" aria-label="Siyah"></button>
-            <label class="swatch-custom" title="Özel renk ekle" aria-label="Özel renk"><input type="color" id="stampAddCustomColor" value="#ff007f" /></label>
+            <label class="swatch-custom" title="Özel renk ekle" aria-label="Özel renk"><input type="color"
+                id="stampAddCustomColor" value="#ff007f" /></label>
           </div>
         </div>
 
