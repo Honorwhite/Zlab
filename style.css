@@ -144,19 +144,61 @@ select option { background: #11181c; }
   border: 1px solid var(--line-2);
   background: #000;
   aspect-ratio: 16 / 10;
+  cursor: pointer;
+  outline: none;
   transition: transform 0.25s cubic-bezier(.2,.8,.2,1), border-color 0.2s, box-shadow 0.25s;
 }
 .theme-card canvas { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform 0.6s cubic-bezier(.2,.8,.2,1); }
-.theme-card span {
+.theme-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.3); }
+.theme-card:hover canvas { transform: scale(1.08); }
+.theme-card.on { border-color: var(--volt); box-shadow: 0 0 0 2px var(--volt), 0 10px 30px -12px rgba(200, 255, 61, 0.6); }
+.theme-card span,
+.theme-card-label {
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 18px 9px 7px;
   font-size: 12px; font-weight: 700; text-align: left;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.88));
+  pointer-events: none;
+  user-select: none;
 }
-.theme-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.3); }
-.theme-card:hover canvas { transform: scale(1.08); }
-.theme-card.on { border-color: var(--volt); box-shadow: 0 0 0 2px var(--volt), 0 10px 30px -12px rgba(200, 255, 61, 0.6); }
-.theme-card.on span::after { content: '●'; color: var(--volt); float: right; font-size: 9px; margin-top: 3px; }
+.theme-card.on span::after,
+.theme-card.on .theme-card-label::after { content: '●'; color: var(--volt); float: right; font-size: 9px; margin-top: 3px; }
+
+/* Kart içi Dark / White Mod Butonları */
+.theme-mode-pill {
+  position: absolute; top: 6px; right: 6px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px;
+  background: rgba(8, 12, 14, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 99px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+.theme-mode-pill .mode-opt {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 99px;
+  color: var(--fg-2);
+  line-height: 1;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+.theme-mode-pill .mode-opt:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+}
+.theme-mode-pill .mode-opt.on {
+  background: var(--volt);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 1px 6px rgba(200, 255, 61, 0.45);
+}
 
 /* Segment */
 .seg { display: flex; padding: 4px; gap: 4px; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line-2); border-radius: 12px; }
@@ -250,3 +292,105 @@ input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 
 .chip { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line-2); font-size: 13px; color: var(--fg-2); transition: all 0.15s; }
 .chip.on { background: var(--volt); color: var(--ink); border-color: var(--volt); font-weight: 700; transform: translateY(-1px); }
 .hint { font-size: 11px; color: var(--fg-3); }
+
+/* Word Stamp Çoklu Renk Sırası */
+.stamp-seq-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  min-height: 44px;
+}
+.stamp-seq-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.stamp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 99px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg);
+  user-select: none;
+  animation: fadeIn 0.15s ease-out;
+}
+.stamp-chip .chip-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 6px var(--c);
+  flex-shrink: 0;
+}
+.stamp-chip .chip-num {
+  font-weight: 700;
+  color: var(--fg-3);
+  font-size: 10px;
+}
+.stamp-chip button {
+  background: none;
+  border: none;
+  color: var(--fg-3);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.stamp-chip button:hover {
+  color: #ff4d4d;
+}
+.btn-clear-seq {
+  background: none;
+  border: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.btn-clear-seq:hover {
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.12);
+}
+.stamp-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.stamp-presets button {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-2);
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.stamp-presets button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.3);
+}

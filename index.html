@@ -59,8 +59,8 @@
       <section class="group">
         <div class="label"><span>03</span> Format</div>
         <div class="seg" id="aspectSeg" role="radiogroup">
-          <button data-v="16:9" class="on" id="aspect-169">16:9</button>
-          <button data-v="9:16" id="aspect-916">9:16</button>
+          <button data-v="9:16" class="on" id="aspect-916">9:16</button>
+          <button data-v="16:9" id="aspect-169">16:9</button>
           <button data-v="1:1" id="aspect-11">1:1</button>
         </div>
       </section>
@@ -81,7 +81,7 @@
         </div>
       </section>
 
-      <section class="group">
+      <section class="group" id="groupHighlight">
         <div class="label"><span>05</span> Vurgu</div>
         <div class="row">
           <select id="hl" aria-label="Vurgu stili">
@@ -101,6 +101,44 @@
             <label class="swatch-custom" aria-label="Özel renk"><input type="color" id="hlColor"
                 value="#ffe14d" /></label>
           </div>
+        </div>
+      </section>
+
+      <section class="group" id="groupWordStampColor" style="display: none;">
+        <div class="label"><span>05</span> Word Stamp Kelime Renkleri</div>
+        <p class="hint" style="margin-bottom: 8px;">Seçtiğin renkler sırayla kelimelere uygulanır (1. kelime, 2. kelime…):</p>
+
+        <!-- Seçili renk sıraları -->
+        <div class="stamp-seq-wrap">
+          <div class="stamp-seq-chips" id="stampSeqChips"></div>
+          <button type="button" class="btn-clear-seq" id="stampClearSeqBtn" title="Sırayı temizle">Temizle</button>
+        </div>
+
+        <!-- Renk ekle / Renk havuzu -->
+        <div class="row" style="margin-top: 10px;">
+          <div class="swatches" id="stampSwatches">
+            <button data-c="#c8ff3d" style="--c:#c8ff3d" title="Volt ekle" aria-label="Volt"></button>
+            <button data-c="#f472b6" style="--c:#f472b6" title="Pembe ekle" aria-label="Pembe"></button>
+            <button data-c="#38bdf8" style="--c:#38bdf8" title="Mavi ekle" aria-label="Mavi"></button>
+            <button data-c="#fb923c" style="--c:#fb923c" title="Turuncu ekle" aria-label="Turuncu"></button>
+            <button data-c="#e11d48" style="--c:#e11d48" title="Kırmızı ekle" aria-label="Kırmızı"></button>
+            <button data-c="#10b981" style="--c:#10b981" title="Zümrüt ekle" aria-label="Zümrüt"></button>
+            <button data-c="#a855f7" style="--c:#a855f7" title="Mor ekle" aria-label="Mor"></button>
+            <button data-c="#ffd166" style="--c:#ffd166" title="Sarı ekle" aria-label="Sarı"></button>
+            <button data-c="#ffffff" style="--c:#ffffff" title="Beyaz ekle" aria-label="Beyaz"></button>
+            <button data-c="#16191d" style="--c:#16191d" title="Siyah ekle" aria-label="Siyah"></button>
+            <label class="swatch-custom" title="Özel renk ekle" aria-label="Özel renk"><input type="color" id="stampAddCustomColor" value="#ff007f" /></label>
+          </div>
+        </div>
+
+        <!-- Hızlı Kombinasyonlar -->
+        <div class="stamp-presets" id="stampPresets">
+          <button type="button" data-preset="volt_pink">⚡ Volt &amp; Pembe</button>
+          <button type="button" data-preset="trio">🌐 Volt, Mavi, Turuncu</button>
+          <button type="button" data-preset="rainbow">🌈 6 Renk (Gökkuşağı)</button>
+          <button type="button" data-preset="mono">🖤 Siyah &amp; Beyaz</button>
+          <button type="button" data-preset="warm">🔥 Turuncu &amp; Kırmızı</button>
+          <button type="button" data-preset="single_volt">✨ Tek Renk (Volt)</button>
         </div>
       </section>
 
@@ -136,10 +174,10 @@
     <section class="stage-wrap" aria-label="Önizleme">
       <div class="stage-meta mono">
         <span><i class="rec"></i> <b id="themeName">Gazete</b></span>
-        <span id="resLabel">1920×1080</span>
+        <span id="resLabel">1080×1920</span>
       </div>
       <div class="stage" id="stageBox">
-        <canvas id="stage" width="1920" height="1080"></canvas>
+        <canvas id="stage" width="1080" height="1920"></canvas>
         <div class="loader" id="loader">
           <div class="spin"></div><span class="mono">fontlar yükleniyor…</span>
         </div>

@@ -385,7 +385,7 @@
     label: 'Google Arama', hl: { style: 'none', color: '#ffe14d' },
     draw(ctx, W, H, word, R, o) {
       const S = o.size, cx = W / 2, cy = H / 2;
-      const dark = R.chance(0.35);
+      const dark = o.mode ? (o.mode === 'dark') : R.chance(0.35);
       const c = dark
         ? { bg: '#202124', bar: '#303134', text: '#e8eaed', sub: '#9aa0a6', link: '#8ab4f8', border: '#5f6368', btn: '#303134' }
         : { bg: '#ffffff', bar: '#ffffff', text: '#202124', sub: '#4d5156', link: '#1a0dab', border: '#dfe1e5', btn: '#f8f9fa' };
@@ -491,9 +491,15 @@
     label: 'Vikipedi', hl: { style: 'marker', color: '#ffec6e' },
     draw(ctx, W, H, word, R, o) {
       const S = o.size;
-      ctx.fillStyle = R.chance(0.8) ? '#ffffff' : '#f8f9fa'; ctx.fillRect(0, 0, W, H);
+      const dark = o.mode ? (o.mode === 'dark') : false;
+      const bg = dark ? (R.chance(0.7) ? '#101418' : '#181d22') : (R.chance(0.8) ? '#ffffff' : '#f8f9fa');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
       const fam = R.pick(FONTS.sans);
-      const text = '#202122', link = '#3366cc';
+      const text = dark ? '#eaecf0' : '#202122';
+      const link = dark ? '#6b9eff' : '#3366cc';
+      const border = dark ? '#3c4043' : '#a2a9b1';
+      const cardBg = dark ? '#1b2026' : '#f8f9fa';
+      const headerBg = dark ? '#101418' : '#ffffff';
       const asLink = R.chance(0.35);
       const wordFont = F(fam, S, asLink ? 400 : 700);
       ctx.font = wordFont;
@@ -507,31 +513,31 @@
       const res = textPage(ctx, W, H, R, {
         ...o, word, wordSize: S, wordFont, color: text, wordColor: asLink ? link : text,
         bodyFont: F(fam, S), bodySize: S, lineH, cols: [[x0, x1]],
-        linkChance: 0.1, linkColor: link, paraChance: 0.12,
+        linkChance: 0.1, linkColor: link, paraChance: 0.12, dark,
       });
       const lx = Math.max(x0, -S * 2);
       if (R.chance(0.55)) { // başlık bandı
         const k = R.int(3, 5), base = res.base;
         const top = base - (k + 2) * lineH - S * 0.9, bot = base - k * lineH + S * 0.3;
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(lx - S, top, x1 - lx + S * 2, bot - top);
+        ctx.fillStyle = headerBg; ctx.fillRect(lx - S, top, x1 - lx + S * 2, bot - top);
         const tx = x0 < 0 ? W / 2 - S * 6 : x0;
         ctx.font = F(R.pick(['Libre Baskerville', 'Lora', 'PT Serif']), S * 1.6, 400);
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = dark ? '#ffffff' : '#000000';
         ctx.fillText(cap1(word, o.lang), tx, bot - S * 0.85);
-        ctx.fillStyle = '#a2a9b1'; ctx.fillRect(lx, bot - S * 0.5, x1 - lx, Math.max(1.5, S * 0.02));
-        ctx.font = F(fam, S * 0.42, 400); ctx.fillStyle = '#54595d';
+        ctx.fillStyle = border; ctx.fillRect(lx, bot - S * 0.5, x1 - lx, Math.max(1.5, S * 0.02));
+        ctx.font = F(fam, S * 0.42, 400); ctx.fillStyle = dark ? '#9aa0a6' : '#54595d';
         ctx.fillText(o.lang === 'en' ? 'From Wikipedia, the free encyclopedia' : 'Vikipedi, özgür ansiklopedi', tx, bot - S * 0.05);
       }
       if (box !== null) { // bilgi kutusu
         const top = R.range(-S * 2, H * 0.25), h = H * R.range(0.8, 1.2);
-        ctx.fillStyle = '#f8f9fa'; ctx.fillRect(box, top, W, h);
-        ctx.strokeStyle = '#a2a9b1'; ctx.lineWidth = Math.max(1.5, S * 0.02); ctx.strokeRect(box, top, W, h);
+        ctx.fillStyle = cardBg; ctx.fillRect(box, top, W, h);
+        ctx.strokeStyle = border; ctx.lineWidth = Math.max(1.5, S * 0.02); ctx.strokeRect(box, top, W, h);
         const iw = Math.min(W - box - S * 0.8, S * 7);
         ctx.font = F(fam, S * 0.6, 700); ctx.fillStyle = text;
         ctx.fillText(cap1(word, o.lang), box + S * 0.4, top + S * 0.9);
         const g = ctx.createLinearGradient(box, top + S * 1.3, box + iw, top + S * 1.3 + iw * 0.7);
         const hue = R.int(0, 360);
-        g.addColorStop(0, `hsl(${hue},35%,55%)`); g.addColorStop(1, `hsl(${(hue + 60) % 360},30%,25%)`);
+        g.addColorStop(0, `hsl(${hue},35%,${dark ? 45 : 55}%)`); g.addColorStop(1, `hsl(${(hue + 60) % 360},30%,${dark ? 20 : 25}%)`);
         ctx.fillStyle = g; ctx.fillRect(box + S * 0.4, top + S * 1.3, iw, iw * 0.7);
         let y = top + S * 1.9 + iw * 0.7; const next = filler(R, o.lang);
         for (let i = 0; i < 8; i++) {
@@ -552,6 +558,7 @@
     { name: 'whatsapp-dark', bg: '#0b141a', me: '#005c4b', meText: '#e9edef', them: '#202c33', themText: '#e9edef', meta: '#8696a0', dark: true },
     { name: 'whatsapp', bg: '#efeae2', me: '#d9fdd3', meText: '#111b21', them: '#ffffff', themText: '#111b21', meta: '#667781', dark: false },
     { name: 'telegram', bg: '#a7c4a0', me: '#effdde', meText: '#000000', them: '#ffffff', themText: '#000000', meta: '#5f8a5a', dark: false },
+    { name: 'telegram-dark', bg: '#0e1621', me: '#2b5278', meText: '#ffffff', them: '#182533', themText: '#ffffff', meta: '#647c94', dark: true },
   ];
   function wrapWords(ctx, words, maxW) {
     const lines = []; let cur = '';
@@ -566,7 +573,9 @@
     label: 'Sohbet', hl: { style: 'none', color: '#ffe14d' },
     draw(ctx, W, H, word, R, o) {
       const S = o.size, cx = W / 2, cy = H / 2;
-      const sc = R.pick(CHAT_SCHEMES);
+      const isDark = o.mode ? (o.mode === 'dark') : R.chance(0.5);
+      const pool = CHAT_SCHEMES.filter((s) => s.dark === isDark);
+      const sc = R.pick(pool.length ? pool : CHAT_SCHEMES);
       const fam = R.pick(['Inter', 'Roboto', 'Open Sans']);
       ctx.fillStyle = sc.bg; ctx.fillRect(0, 0, W, H);
       if (sc.name.startsWith('whatsapp')) grain(ctx, W, H, R, 0.05);
@@ -593,7 +602,7 @@
       };
       // orta balon
       bubble(bx, btop, bw, bh, side);
-      highlight(ctx, wx, base, ww, S, o.hl, o.hlColor, R, true);
+      highlight(ctx, wx, base, ww, S, o.hl, o.hlColor, R, sc.dark);
       ctx.fillStyle = side === 'me' ? sc.meText : sc.themText;
       if (pre) ctx.fillText(pre, bx + padX, base);
       ctx.fillText(word, wx, base);
@@ -636,7 +645,7 @@
     label: 'Yorumlar', hl: { style: 'none', color: '#ffe14d' },
     draw(ctx, W, H, word, R, o) {
       const S = o.size, cx = W / 2, cy = H / 2;
-      const dark = R.chance(0.6);
+      const dark = o.mode ? (o.mode === 'dark') : R.chance(0.6);
       const c = dark ? { bg: '#0f0f0f', text: '#f1f1f1', sub: '#aaaaaa', blue: '#3ea6ff' } : { bg: '#ffffff', text: '#0f0f0f', sub: '#606060', blue: '#065fd4' };
       const fam = R.pick(['Roboto', 'Inter', 'Open Sans']);
       ctx.fillStyle = c.bg; ctx.fillRect(0, 0, W, H);
@@ -648,15 +657,7 @@
       const ww = ctx.measureText(word).width, wx = cx - ww / 2, base = cy + S * 0.36;
       const lineH = S * 1.3, right = W - S * 0.6;
 
-      // önek kelimeler -> metnin sol kenarını belirler
-      const target = R.range(0, Math.max(0, wx - W * 0.14));
-      const pre = []; let preW = 0;
-      for (let i = 0; i < 12; i++) {
-        const w = next(); const mw = ctx.measureText(w).width + sp;
-        if (preW + mw > target) break;
-        pre.push(w); preW += mw;
-      }
-      const textX = wx - preW;
+      const textX = wx;
 
       const fillLine = (y, partial) => {
         ctx.font = font; ctx.fillStyle = c.text;
@@ -694,23 +695,14 @@
       };
       const blockH = (n) => S * 0.7 + lineH * 0.95 + (n - 1) * lineH + lineH * 1.05 + S * 0.35;
 
-      // orta yorum
-      const n = R.int(1, 3), j = R.int(0, n - 1);
-      header(base - j * lineH - lineH * 0.95);
-      for (let i = 0; i < n; i++) {
-        const y = base + (i - j) * lineH;
-        if (i === j) {
-          ctx.font = font; ctx.fillStyle = c.text;
-          let x = textX; pre.forEach((w) => { ctx.fillText(w, x, y); x += ctx.measureText(w).width + sp; });
-          highlight(ctx, wx, base, ww, S, o.hl, o.hlColor, R, dark);
-          ctx.font = font; ctx.fillStyle = c.text; ctx.fillText(word, wx, y);
-          x = wx + ww + sp; let g = 0;
-          while (g++ < 40) { const w = next(); const mw = ctx.measureText(w).width; if (x + mw > right) break; ctx.fillText(w, x, y); x += mw + sp; }
-        } else fillLine(y, i === n - 1);
-      }
-      const extra = actions(base + (n - 1 - j) * lineH + lineH * 1.05);
-      let top = base - j * lineH - lineH * 0.95 - S * 0.7;
-      let bottom = base + (n - 1 - j) * lineH + lineH * 1.05 + S * 0.35 + extra;
+      // orta yorum (bizim yorumumuz - sadece yazdığımız metin)
+      header(base - lineH * 0.95);
+      highlight(ctx, wx, base, ww, S, o.hl, o.hlColor, R, dark);
+      ctx.font = font; ctx.fillStyle = c.text;
+      ctx.fillText(word, wx, base);
+      const extra = actions(base + lineH * 1.05);
+      let top = base - lineH * 0.95 - S * 0.7;
+      let bottom = base + lineH * 1.05 + S * 0.35 + extra;
 
       const drawComment = (topY, k) => {
         const hy = topY + S * 0.7;
@@ -831,5 +823,270 @@
     },
   };
 
-  global.MC = { rng, hash, themes, getNoise, families: ALL_FAMILIES, order: ['newspaper', 'book', 'google', 'wiki', 'chat', 'comments', 'typewriter', 'magazine'] };
+  /* 9. WORD STAMP (zlabz.io: Styled words stamp onto grid paper, beat by beat) */
+  const STAMP_PALETTES = {
+    light: [
+      { text: '#16191d', border: '#16191d', shadow: 'rgba(20,24,28,0.2)' },
+      { text: '#ea580c', border: '#ea580c', shadow: 'rgba(234,88,12,0.22)' }, // warm orange (like 'on')
+      { text: '#059669', border: '#059669', shadow: 'rgba(5,150,105,0.22)' }, // emerald green
+      { text: '#1d4ed8', border: '#1d4ed8', shadow: 'rgba(29,78,216,0.22)' }, // royal blue
+      { text: '#e11d48', border: '#e11d48', shadow: 'rgba(225,29,72,0.22)' }, // rose red
+      { text: '#6d28d9', border: '#6d28d9', shadow: 'rgba(109,40,217,0.22)' }, // deep violet
+    ],
+    dark: [
+      { text: '#ffffff', border: '#ffffff', shadow: 'rgba(0,0,0,0.6)' },
+      { text: '#c8ff3d', border: '#c8ff3d', shadow: 'rgba(200,255,61,0.3)' }, // volt
+      { text: '#fb923c', border: '#fb923c', shadow: 'rgba(251,146,60,0.3)' }, // orange
+      { text: '#38bdf8', border: '#38bdf8', shadow: 'rgba(56,189,248,0.3)' }, // sky
+      { text: '#4ade80', border: '#4ade80', shadow: 'rgba(74,222,128,0.3)' }, // lime
+      { text: '#f472b6', border: '#f472b6', shadow: 'rgba(244,114,182,0.3)' }, // pink
+    ],
+  };
+
+  const STAMP_STYLES = [
+    { fam: 'Bebas Neue', weight: 400, scale: 1.25, upper: true, rot: -0.04 },
+    { fam: 'Permanent Marker', weight: 400, scale: 1.05, upper: false, rot: 0.12 },
+    { fam: 'Playfair Display', weight: 700, style: 'italic', scale: 1.0, upper: false, rot: -0.14 },
+    { fam: 'Lobster', weight: 400, scale: 1.05, upper: false, rot: 0.08 },
+    { fam: 'Anton', weight: 400, scale: 1.15, upper: true, rot: 0.03 },
+    { fam: 'Archivo Black', weight: 400, scale: 1.08, upper: true, rot: -0.06 },
+    { fam: 'Special Elite', weight: 400, scale: 1.0, upper: false, rot: -0.08 },
+    { fam: 'Bricolage Grotesque', weight: 800, scale: 1.12, upper: true, rot: 0.05 },
+  ];
+
+  function drawGridPaper(ctx, W, H, dark, R) {
+    const bg = dark ? '#0f1418' : '#f9f6ed';
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    const cellSize = Math.max(30, Math.min(W, H) * 0.038);
+    const lineMajor = dark ? 'rgba(200, 255, 61, 0.14)' : 'rgba(70, 110, 140, 0.22)';
+    const lineMinor = dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(70, 110, 140, 0.09)';
+
+    ctx.lineWidth = 1;
+    let col = 0;
+    for (let x = 0; x <= W; x += cellSize, col++) {
+      ctx.strokeStyle = col % 5 === 0 ? lineMajor : lineMinor;
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, H);
+      ctx.stroke();
+    }
+    let row = 0;
+    for (let y = 0; y <= H; y += cellSize, row++) {
+      ctx.strokeStyle = row % 5 === 0 ? lineMajor : lineMinor;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(W, y + 0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    grain(ctx, W, H, R, dark ? 0.07 : 0.05);
+
+    const grad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.75);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, dark ? 'rgba(0,0,0,0.5)' : 'rgba(90, 70, 40, 0.12)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  themes.wordstamp = {
+    label: 'Word Stamp', hl: { style: 'none', color: '#ffe14d' },
+    draw(ctx, W, H, word, R, o) {
+      const dark = o.mode ? (o.mode === 'dark') : false;
+      const S = o.size || Math.min(W, H) * 0.088;
+      const rawWords = Array.isArray(o.words) && o.words.length ? o.words : [word];
+      const curWi = typeof o.wi === 'number' ? Math.max(0, Math.min(rawWords.length - 1, o.wi)) : 0;
+      const nextWi = (curWi + 1) % rawWords.length;
+      const u = typeof o.u === 'number' ? Math.max(0, Math.min(1, o.u)) : 0.05;
+
+      const userColors = Array.isArray(o.stampColors) && o.stampColors.length > 0 ? o.stampColors : null;
+      const defaultPalettes = dark ? STAMP_PALETTES.dark : STAMP_PALETTES.light;
+      const styles = STAMP_STYLES;
+
+      const positions = rawWords.map((wrd, i) => {
+        const sSeed = hash(1001, 'ws_layout', i, wrd);
+        const sR = rng(sSeed);
+        const style = styles[Math.abs(sSeed) % styles.length];
+
+        let pal;
+        if (userColors) {
+          const c = userColors[i % userColors.length];
+          pal = {
+            text: c,
+            border: c,
+            shadow: dark ? 'rgba(0,0,0,0.65)' : 'rgba(20,24,28,0.22)',
+          };
+        } else {
+          pal = defaultPalettes[Math.abs(sSeed * 5 + 2) % defaultPalettes.length];
+        }
+
+        const side = (i % 2 === 1) ? 1 : -1;
+        const x = i === 0 ? 0 : side * (S * sR.range(1.5, 2.5)) + (sR.range(-0.25, 0.25) * S);
+        const y = i * (S * 2.2) + (sR.range(-0.15, 0.15) * S);
+        const rot = (style.rot || 0) + sR.range(-0.04, 0.04);
+        return { x, y, rot, style, pal, sSeed };
+      });
+
+      const targetA = positions[curWi];
+      const targetB = positions[nextWi];
+
+      let camX, camY, camRot;
+      const glideStart = 0.38;
+      if (u < glideStart || rawWords.length === 1) {
+        camX = targetA.x;
+        camY = targetA.y;
+        camRot = targetA.rot * 0.35;
+      } else {
+        const progress = (u - glideStart) / (1 - glideStart);
+        const ease = progress * progress * (3 - 2 * progress);
+        camX = targetA.x + (targetB.x - targetA.x) * ease;
+        camY = targetA.y + (targetB.y - targetA.y) * ease;
+        camRot = (targetA.rot + (targetB.rot - targetA.rot) * ease) * 0.35;
+      }
+
+      const pitch = 0.40;
+      const stampBounce = Math.max(0, 1 - u * 5.5);
+      const camZoom = 1.0 + stampBounce * 0.05;
+
+      const project = (wx, wy, wz = 0) => {
+        const dx = wx - camX;
+        const dy = wy - camY;
+        const cosR = Math.cos(-camRot);
+        const sinR = Math.sin(-camRot);
+        const rx = dx * cosR - dy * sinR;
+        const ry = dx * sinR + dy * cosR;
+
+        const cosP = Math.cos(pitch);
+        const sinP = Math.sin(pitch);
+        const y3d = ry * cosP;
+        const z3d = wz + ry * sinP;
+
+        const focal = Math.max(W, H) * 1.15;
+        const depth = focal + z3d;
+        if (depth < 20) return null;
+
+        const scale = (focal / depth) * camZoom;
+        return {
+          screenX: W / 2 + rx * scale,
+          screenY: H / 2 + y3d * scale,
+          scale,
+        };
+      };
+
+      const bg = dark ? '#0d1216' : '#f9f6ed';
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      const cellSize = Math.max(30, S * 0.44);
+      const lineMajor = dark ? 'rgba(200, 255, 61, 0.16)' : 'rgba(70, 110, 140, 0.24)';
+      const lineMinor = dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(70, 110, 140, 0.09)';
+
+      const gridSpan = Math.max(W, H) * 2.2;
+      const startX = Math.floor((camX - gridSpan) / cellSize) * cellSize;
+      const endX = Math.ceil((camX + gridSpan) / cellSize) * cellSize;
+      const startY = Math.floor((camY - gridSpan) / cellSize) * cellSize;
+      const endY = Math.ceil((camY + gridSpan) / cellSize) * cellSize;
+
+      ctx.lineWidth = 1;
+      let colIdx = Math.round(startX / cellSize);
+      for (let gx = startX; gx <= endX; gx += cellSize, colIdx++) {
+        const p1 = project(gx, startY, 0);
+        const p2 = project(gx, endY, 0);
+        if (p1 && p2) {
+          ctx.strokeStyle = (colIdx % 5 === 0) ? lineMajor : lineMinor;
+          ctx.beginPath();
+          ctx.moveTo(p1.screenX, p1.screenY);
+          ctx.lineTo(p2.screenX, p2.screenY);
+          ctx.stroke();
+        }
+      }
+      let rowIdx = Math.round(startY / cellSize);
+      for (let gy = startY; gy <= endY; gy += cellSize, rowIdx++) {
+        const p1 = project(startX, gy, 0);
+        const p2 = project(endX, gy, 0);
+        if (p1 && p2) {
+          ctx.strokeStyle = (rowIdx % 5 === 0) ? lineMajor : lineMinor;
+          ctx.beginPath();
+          ctx.moveTo(p1.screenX, p1.screenY);
+          ctx.lineTo(p2.screenX, p2.screenY);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      grain(ctx, W, H, R, dark ? 0.06 : 0.04);
+
+      const minVisibleWi = Math.max(0, curWi - 5);
+      for (let i = minVisibleWi; i <= curWi; i++) {
+        const wrd = rawWords[i];
+        const p = positions[i];
+        const isCur = (i === curWi);
+
+        let stampZ = 0;
+        let stampScale = 1.0;
+        let alpha = 1.0;
+        if (isCur) {
+          const hit = Math.max(0, 1 - u * 5);
+          stampZ = hit * (S * 0.85);
+          stampScale = 1.0 + hit * 0.22;
+          alpha = Math.min(1, u * 8);
+        }
+
+        const proj = project(p.x, p.y, stampZ);
+        if (!proj) continue;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(proj.screenX, proj.screenY);
+        ctx.rotate(p.rot - camRot);
+        ctx.scale(proj.scale * stampScale, proj.scale * stampScale * Math.cos(pitch));
+
+        const fontSize = S * (isCur ? 1.35 : 1.05) * p.style.scale;
+        const font = F(p.style.fam, fontSize, p.style.weight, p.style.style || 'normal');
+        ctx.font = font;
+
+        const displayText = p.style.upper ? wrd.toLocaleUpperCase(locale(o.lang)) : wrd;
+        const tw = ctx.measureText(displayText).width;
+
+        const shadowBlur = (fontSize * 0.1) + (stampZ * 0.14);
+        const shadowOff = (fontSize * 0.05) + (stampZ * 0.08);
+        ctx.shadowColor = p.pal.shadow;
+        ctx.shadowBlur = shadowBlur;
+        ctx.shadowOffsetY = shadowOff;
+
+        if (isCur && o.hl && o.hl !== 'none') {
+          highlight(ctx, -tw / 2, fontSize * 0.35, tw, fontSize, o.hl, o.hlColor, R, dark);
+        }
+
+        const hasFrame = (p.sSeed % 3 === 0);
+        if (hasFrame) {
+          const padX = fontSize * 0.35, padY = fontSize * 0.18;
+          ctx.strokeStyle = p.pal.border;
+          ctx.lineWidth = Math.max(2, fontSize * 0.045);
+          rr(ctx, -tw / 2 - padX, -fontSize * 0.72 - padY, tw + padX * 2, fontSize * 0.9 + padY * 2, fontSize * 0.2);
+          ctx.stroke();
+        }
+
+        ctx.font = font;
+        ctx.fillStyle = p.pal.text;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(displayText, 0, fontSize * 0.3);
+
+        ctx.restore();
+      }
+
+      const grad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.28, W / 2, H / 2, Math.max(W, H) * 0.78);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, dark ? 'rgba(0,0,0,0.65)' : 'rgba(70, 50, 30, 0.16)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+    },
+  };
+
+  global.MC = { rng, hash, themes, getNoise, F, rr, grain, locale, families: ALL_FAMILIES, STAMP_PALETTES, STAMP_STYLES, order: ['newspaper', 'book', 'google', 'wiki', 'chat', 'comments', 'wordstamp', 'typewriter', 'magazine'] };
 })(window);

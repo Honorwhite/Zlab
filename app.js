@@ -7,17 +7,25 @@
 
   const ASPECTS = { '16:9': [1920, 1080], '9:16': [1080, 1920], '1:1': [1080, 1080] };
   const state = {
-    words: [], theme: 'newspaper', aspect: '16:9',
+    words: [], theme: 'newspaper', aspect: '9:16',
     cutMs: 140, cuts: 6, zoom: 1,
     hl: 'auto', hlColor: '#ffe14d', lang: 'tr',
     focusBlur: true, blurRadius: 16,
     film: true, sound: true, upper: false,
     seed: Math.floor(Math.random() * 1e6), playing: true,
+    themeMode: {
+      google: 'dark',
+      comments: 'dark',
+      chat: 'dark',
+      wiki: 'white',
+      wordstamp: 'dark',
+    },
+    stampColors: ['#c8ff3d', '#f472b6', '#38bdf8'],
   };
 
   const canvas = $('#stage');
   const ctx = canvas.getContext('2d');
-  let W = 1920, H = 1080;
+  let W = 1080, H = 1920;
 
   /* ---------- Kesim önbelleği ---------- */
   const cache = new Map();
@@ -25,14 +33,24 @@
 
   const display = (w) => (state.upper ? w.toLocaleUpperCase(state.lang === 'en' ? 'en' : 'tr') : w);
 
-  function renderCut(themeKey, word, seed, w, h, zoom = state.zoom) {
+  function renderCut(themeKey, word, seed, w, h, zoom = state.zoom, mode = state.themeMode[themeKey], meta = {}) {
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
     const g = c.getContext('2d');
     const R = MC.rng(seed);
     const th = MC.themes[themeKey];
     const hl = state.hl === 'auto' ? th.hl : { style: state.hl, color: state.hlColor };
-    th.draw(g, w, h, word, R, { size: Math.min(w, h) * 0.085 * zoom, lang: state.lang, hl: hl.style, hlColor: hl.color });
+    const curMode = mode || state.themeMode[themeKey] || 'dark';
+    th.draw(g, w, h, word, R, {
+      size: Math.min(w, h) * 0.085 * zoom,
+      lang: state.lang,
+      hl: hl.style,
+      hlColor: hl.color,
+      mode: curMode,
+      words: meta.words || (state.words.length ? state.words.map(display) : [word]),
+      wi: typeof meta.wi === 'number' ? meta.wi : 0,
+      ci: typeof meta.ci === 'number' ? meta.ci : 0,
+    });
     c._rot = R.range(-1, 1) * 1.1 * (Math.PI / 180);
     c._sc = R.range(1.04, 1.09);
     return c;
@@ -42,7 +60,13 @@
     const key = wi + ':' + ci;
     let c = cache.get(key);
     if (c) return c;
-    c = renderCut(state.theme, display(state.words[wi]), MC.hash(state.seed, state.theme, wi, ci, state.words[wi]), W, H);
+    const curMode = state.themeMode[state.theme] || 'dark';
+    const wordsList = state.words.map(display);
+    c = renderCut(state.theme, display(state.words[wi]), MC.hash(state.seed, state.theme, curMode, wi, ci, state.words[wi]), W, H, state.zoom, curMode, {
+      wi,
+      ci,
+      words: wordsList,
+    });
     cache.set(key, c);
     const limit = Math.max(80, state.words.length * state.cuts + 8);
     while (cache.size > limit) cache.delete(cache.keys().next().value);
@@ -121,7 +145,7 @@
         for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 5);
       }
       if (actx && actx.state === 'suspended') {
-        actx.resume().catch(() => {});
+        actx.resume().catch(() => { });
       }
     } catch (e) {
       // AudioContext autoplay kısıtlaması nedeniyle kullanıcı etkileşimi bekleniyor olabilir
@@ -159,6 +183,52 @@
   }
 
   function render(t) {
+    if (state.theme === 'wordstamp') {
+      const wordDur = Math.max(300, state.cuts * state.cutMs);
+      const totalWords = state.words.length || 1;
+      const totalT = totalWords * wordDur;
+      const curTNorm = ((t % totalT) + totalT) % totalT;
+      const wi = Math.floor(curTNorm / wordDur) % totalWords;
+      const u = (curTNorm % wordDur) / wordDur;
+      if (wi !== lastIdx) {
+        lastIdx = wi;
+        if (state.playing) click();
+        $$('.chip').forEach((c, i) => c.classList.toggle('on', i === wi));
+      }
+
+      const rawWords = state.words.length ? state.words.map(display) : (state.lang === 'en' ? ['WORD', 'STAMP'] : ['KELİME', 'DAMGA']);
+      const curMode = state.themeMode['wordstamp'] || 'white';
+      const R = MC.rng(MC.hash(state.seed, 'ws_frame', wi));
+      MC.themes.wordstamp.draw(ctx, W, H, rawWords[wi] || 'STAMP', R, {
+        size: Math.min(W, H) * 0.088 * state.zoom,
+        lang: state.lang,
+        hl: state.hl === 'auto' ? MC.themes.wordstamp.hl.style : state.hl,
+        hlColor: state.hlColor,
+        mode: curMode,
+        words: rawWords,
+        wi,
+        u,
+        t,
+        stampColors: state.stampColors,
+      });
+
+      if (state.focusBlur && state.blurRadius > 0 && blurMaskCanvas) {
+        if (!blurLayerCanvas) initBlurLayer();
+        const bctx = blurLayerCanvas.getContext('2d');
+        bctx.clearRect(0, 0, W, H);
+        bctx.save();
+        bctx.filter = `blur(${state.blurRadius}px)`;
+        bctx.drawImage(canvas, 0, 0);
+        bctx.restore();
+        bctx.save();
+        bctx.globalCompositeOperation = 'destination-in';
+        bctx.drawImage(blurMaskCanvas, 0, 0);
+        bctx.restore();
+        ctx.drawImage(blurLayerCanvas, 0, 0);
+      }
+      return;
+    }
+
     const idx = Math.floor(t / state.cutMs);
     const wi = Math.floor(idx / state.cuts) % state.words.length;
     const ci = idx % state.cuts;
@@ -242,36 +312,177 @@
   const escapeHtml = (s) => s.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
   /* ---------- Tema kartları ---------- */
+  const MODE_THEMES = ['google', 'comments', 'chat', 'wiki', 'wordstamp'];
+
+  function updateThemeNameLabel(key) {
+    const base = MC.themes[key].label;
+    if (MODE_THEMES.includes(key)) {
+      const m = state.themeMode[key] === 'white' ? 'White' : 'Dark';
+      $('#themeName').textContent = `${base} (${m})`;
+    } else {
+      $('#themeName').textContent = base;
+    }
+  }
+
   function buildThemeGrid() {
     const grid = $('#themeGrid');
     grid.innerHTML = '';
     MC.order.forEach((key) => {
-      const b = document.createElement('button');
-      b.className = 'theme-card' + (key === state.theme ? ' on' : '');
-      b.id = 'theme-' + key;
-      b.setAttribute('role', 'radio');
-      b.dataset.key = key;
-      b.innerHTML = `<span>${MC.themes[key].label}</span>`;
-      b.addEventListener('click', () => selectTheme(key));
-      grid.appendChild(b);
+      const card = document.createElement('div');
+      card.className = 'theme-card' + (key === state.theme ? ' on' : '');
+      card.id = 'theme-' + key;
+      card.setAttribute('role', 'radio');
+      card.setAttribute('tabindex', '0');
+      card.dataset.key = key;
+
+      const hasMode = MODE_THEMES.includes(key);
+      const curMode = state.themeMode[key] || 'dark';
+
+      let modeHtml = '';
+      if (hasMode) {
+        modeHtml = `
+          <div class="theme-mode-pill" role="group" aria-label="${MC.themes[key].label} mod seçimi">
+            <button type="button" class="mode-opt ${curMode === 'dark' ? 'on' : ''}" data-mode="dark" title="Dark mod">Dark</button>
+            <button type="button" class="mode-opt ${curMode === 'white' ? 'on' : ''}" data-mode="white" title="White mod">White</button>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        ${modeHtml}
+        <span class="theme-card-label">${MC.themes[key].label}</span>
+      `;
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.mode-opt')) return;
+        selectTheme(key);
+      });
+
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target.closest('.mode-opt')) return;
+          e.preventDefault();
+          selectTheme(key);
+        }
+      });
+
+      if (hasMode) {
+        card.querySelectorAll('.mode-opt').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const mode = btn.dataset.mode;
+            setThemeMode(key, mode);
+          });
+        });
+      }
+
+      grid.appendChild(card);
     });
     drawThumbs();
   }
-  function drawThumbs() {
+
+  function drawThumb(key) {
+    const card = $(`#theme-${key}`);
+    if (!card) return;
+    const old = card.querySelector('canvas');
+    if (old) old.remove();
+    const curMode = state.themeMode[key] || 'dark';
+
+    if (key === 'wordstamp') {
+      const c = document.createElement('canvas');
+      c.width = 480; c.height = 300;
+      const g = c.getContext('2d');
+      const sample = state.words.length ? state.words.map(display) : (state.lang === 'en' ? ['WORD', 'STAMP'] : ['KELİME', 'DAMGA']);
+      const R = MC.rng(MC.hash('thumb', key, curMode, state.seed));
+      MC.themes.wordstamp.draw(g, 480, 300, sample[0], R, {
+        size: 300 * 0.088,
+        lang: state.lang,
+        hl: 'none',
+        hlColor: state.hlColor,
+        mode: curMode,
+        words: sample,
+        wi: 0,
+        u: 0.05,
+        t: 0,
+        stampColors: state.stampColors,
+      });
+      card.prepend(c);
+      return;
+    }
+
     const sample = state.lang === 'en' ? 'Memory' : 'Zaman';
-    $$('.theme-card').forEach((b) => {
-      const old = b.querySelector('canvas'); if (old) old.remove();
-      const c = renderCut(b.dataset.key, display(sample), MC.hash('thumb', b.dataset.key, state.seed), 480, 300, 1.25);
-      b.prepend(c);
+    const c = renderCut(key, display(sample), MC.hash('thumb', key, curMode, state.seed), 480, 300, 1.25, curMode);
+    card.prepend(c);
+  }
+
+  function drawThumbs() {
+    MC.order.forEach((key) => drawThumb(key));
+  }
+
+  function setThemeMode(key, mode) {
+    state.themeMode[key] = mode;
+    const card = $(`#theme-${key}`);
+    if (card) {
+      card.querySelectorAll('.mode-opt').forEach((b) => {
+        b.classList.toggle('on', b.dataset.mode === mode);
+      });
+    }
+    drawThumb(key);
+    if (state.theme === key) {
+      updateThemeNameLabel(key);
+      resetCache();
+    } else {
+      selectTheme(key);
+    }
+  }
+
+  function updateThemeUI() {
+    const isWS = state.theme === 'wordstamp';
+    const grpHl = $('#groupHighlight');
+    const grpWS = $('#groupWordStampColor');
+    if (grpHl) grpHl.style.display = isWS ? 'none' : '';
+    if (grpWS) grpWS.style.display = isWS ? '' : 'none';
+  }
+
+  function renderStampSeqChips() {
+    const wrap = $('#stampSeqChips');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    if (!state.stampColors || state.stampColors.length === 0) {
+      wrap.innerHTML = '<span style="font-size:11px;color:var(--fg-3);padding:2px 4px;">Renk seçilmedi (tıkla ekle)</span>';
+      return;
+    }
+    state.stampColors.forEach((color, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'stamp-chip';
+      chip.style.setProperty('--c', color);
+      chip.innerHTML = `
+        <span class="chip-num">${i + 1}</span>
+        <span class="chip-dot"></span>
+        <button type="button" data-idx="${i}" title="Bu rengi çıkar">×</button>
+      `;
+      chip.querySelector('button').addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.stampColors.splice(i, 1);
+        if (state.stampColors.length === 0) {
+          state.stampColors = ['#c8ff3d'];
+        }
+        renderStampSeqChips();
+        drawThumb('wordstamp');
+        if (state.theme === 'wordstamp') render(curT);
+      });
+      wrap.appendChild(chip);
     });
   }
+
   function selectTheme(key) {
     state.theme = key;
     $$('.theme-card').forEach((b) => {
       b.classList.toggle('on', b.dataset.key === key);
       b.setAttribute('aria-checked', b.dataset.key === key);
     });
-    $('#themeName').textContent = MC.themes[key].label;
+    updateThemeNameLabel(key);
+    updateThemeUI();
     resetCache();
   }
 
@@ -322,6 +533,55 @@
     $('#hlColor').addEventListener('input', (e) => {
       $$('#swatches button').forEach((x) => x.classList.remove('on'));
       state.hlColor = e.target.value; resetCache();
+    });
+
+    /* Word Stamp Çoklu Renk Sırası Kontrolleri */
+    $$('#stampSwatches button').forEach((b) => {
+      b.addEventListener('click', () => {
+        const c = b.dataset.c;
+        if (!state.stampColors) state.stampColors = [];
+        state.stampColors.push(c);
+        renderStampSeqChips();
+        drawThumb('wordstamp');
+        if (state.theme === 'wordstamp') render(curT);
+      });
+    });
+
+    $('#stampAddCustomColor')?.addEventListener('change', (e) => {
+      const c = e.target.value;
+      if (!state.stampColors) state.stampColors = [];
+      state.stampColors.push(c);
+      renderStampSeqChips();
+      drawThumb('wordstamp');
+      if (state.theme === 'wordstamp') render(curT);
+    });
+
+    $('#stampClearSeqBtn')?.addEventListener('click', () => {
+      state.stampColors = [];
+      renderStampSeqChips();
+      drawThumb('wordstamp');
+      if (state.theme === 'wordstamp') render(curT);
+    });
+
+    const STAMP_PRESET_MAP = {
+      volt_pink: ['#c8ff3d', '#f472b6'],
+      trio: ['#c8ff3d', '#38bdf8', '#fb923c'],
+      rainbow: ['#ea580c', '#059669', '#1d4ed8', '#e11d48', '#6d28d9', '#c8ff3d'],
+      mono: ['#ffffff', '#16191d'],
+      warm: ['#fb923c', '#e11d48'],
+      single_volt: ['#c8ff3d'],
+    };
+
+    $$('#stampPresets button').forEach((b) => {
+      b.addEventListener('click', () => {
+        const preset = b.dataset.preset;
+        if (STAMP_PRESET_MAP[preset]) {
+          state.stampColors = [...STAMP_PRESET_MAP[preset]];
+          renderStampSeqChips();
+          drawThumb('wordstamp');
+          if (state.theme === 'wordstamp') render(curT);
+        }
+      });
     });
 
     $('#focusBlur').addEventListener('change', (e) => {
@@ -396,7 +656,7 @@
           } else {
             return cfg;
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return null;
@@ -419,7 +679,7 @@
         } else {
           return cfg;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return null;
   }
@@ -737,9 +997,9 @@
 
     const MuxerLib = window.Mp4Muxer || (typeof Mp4Muxer !== 'undefined' ? Mp4Muxer : null);
     const canUseWebCodecs = typeof window.VideoEncoder !== 'undefined' &&
-                            typeof window.VideoFrame !== 'undefined' &&
-                            MuxerLib &&
-                            typeof MuxerLib.Muxer === 'function';
+      typeof window.VideoFrame !== 'undefined' &&
+      MuxerLib &&
+      typeof MuxerLib.Muxer === 'function';
 
     if (canUseWebCodecs) {
       try {
@@ -775,6 +1035,8 @@
     applyAspect();
     parseWords();
     buildThemeGrid();
+    updateThemeUI();
+    renderStampSeqChips();
     requestAnimationFrame(frame);
     await loadFonts();
     resetCache();
