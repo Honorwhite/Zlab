@@ -148,7 +148,7 @@
         <div class="toggles">
           <label class="tog"><input type="checkbox" id="focusBlur" checked /><i></i>Kenar Bulanıklığı</label>
           <label class="tog"><input type="checkbox" id="film" checked /><i></i>Film efekti</label>
-          <label class="tog"><input type="checkbox" id="sound" checked /><i></i>Kesim sesi</label>
+          <label class="tog"><input type="checkbox" id="sound" /><i></i>Kesim sesi</label>
           <label class="tog"><input type="checkbox" id="upper" /><i></i>BÜYÜK HARF</label>
         </div>
         <div class="slider" id="blurRadiusWrap" style="margin-top: 12px;">
@@ -179,6 +179,18 @@
       </div>
       <div class="stage" id="stageBox">
         <canvas id="stage" width="1080" height="1920"></canvas>
+        <button id="stageSoundBtn" class="stage-sound-btn muted" type="button" aria-label="Sesi Aç" title="Sesi Aç">
+          <svg class="icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+          <svg class="icon-unmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <span class="btn-text">Sesi Aç</span>
+        </button>
         <div class="loader" id="loader">
           <div class="spin"></div><span class="mono">fontlar yükleniyor…</span>
         </div>
@@ -192,6 +204,17 @@
           </svg>
           <svg class="i-play" viewBox="0 0 24 24">
             <path d="M7 4.5v15l12.5-7.5z" />
+          </svg>
+        </button>
+        <button id="soundToggleBtn" class="sound-toggle-btn muted" type="button" aria-label="Sesi Aç" title="Sesi Aç">
+          <svg class="icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+          <svg class="icon-unmuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
           </svg>
         </button>
         <div class="timeline" id="timeline">

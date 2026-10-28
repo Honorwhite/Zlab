@@ -274,13 +274,93 @@ input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 
 .recording { position: absolute; top: 34px; left: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 99px; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); font-size: 11px; letter-spacing: 0.1em; border: 1px solid rgba(255, 77, 77, 0.5); }
 .recording i { width: 8px; height: 8px; border-radius: 50%; background: #ff4d4d; animation: pulse 0.8s infinite; }
 
-.transport { display: flex; align-items: center; gap: 14px; padding: 10px 14px 10px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+.stage-sound-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: rgba(10, 14, 16, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 99px;
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+.stage-sound-btn:hover {
+  background: rgba(18, 24, 28, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+.stage-sound-btn:active {
+  transform: translateY(0);
+}
+.stage-sound-btn.muted {
+  color: var(--fg-2);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.stage-sound-btn:not(.muted) {
+  border-color: rgba(200, 255, 61, 0.45);
+  color: var(--volt);
+  background: rgba(15, 24, 10, 0.88);
+  box-shadow: 0 4px 16px rgba(200, 255, 61, 0.18);
+}
+.stage-sound-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.stage-sound-btn.muted .icon-unmuted { display: none; }
+.stage-sound-btn:not(.muted) .icon-muted { display: none; }
+
+.transport { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
 .play { width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--volt); color: var(--ink); display: grid; place-items: center; transition: transform 0.15s; }
 .play:hover { transform: scale(1.05); }
 .play svg { width: 20px; height: 20px; fill: currentColor; }
 .play .i-play { display: none; }
 .play.paused .i-play { display: block; }
 .play.paused .i-pause { display: none; }
+
+.sound-toggle-btn {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-2);
+  color: var(--fg-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sound-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+  border-color: var(--line);
+  transform: scale(1.05);
+}
+.sound-toggle-btn:not(.muted) {
+  background: rgba(200, 255, 61, 0.12);
+  color: var(--volt);
+  border-color: rgba(200, 255, 61, 0.35);
+}
+.sound-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.sound-toggle-btn.muted .icon-unmuted { display: none; }
+.sound-toggle-btn:not(.muted) .icon-muted { display: none; }
 .timeline { position: relative; flex: 1; height: 34px; border-radius: 8px; background: rgba(0, 0, 0, 0.4); overflow: hidden; cursor: pointer; }
 .timeline .bar { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(200, 255, 61, 0.1), rgba(200, 255, 61, 0.35)); border-right: 2px solid var(--volt); }
 .ticks { position: absolute; inset: 0; display: flex; }

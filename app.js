@@ -11,7 +11,7 @@
     cutMs: 140, cuts: 6, zoom: 1,
     hl: 'auto', hlColor: '#ffe14d', lang: 'tr',
     focusBlur: true, blurRadius: 16,
-    film: true, sound: true, upper: false,
+    film: true, sound: false, upper: false,
     seed: Math.floor(Math.random() * 1e6), playing: true,
     themeMode: {
       google: 'dark',
@@ -136,7 +136,7 @@
     try {
       if (!actx) {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
+        if (!AudioContextClass) return null;
         actx = new AudioContextClass();
         adest = actx.createMediaStreamDestination();
         const len = Math.floor(actx.sampleRate * 0.045);
@@ -145,11 +145,12 @@
         for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 5);
       }
       if (actx && actx.state === 'suspended') {
-        actx.resume().catch(() => { });
+        return actx.resume().catch(() => { });
       }
     } catch (e) {
       // AudioContext autoplay kısıtlaması nedeniyle kullanıcı etkileşimi bekleniyor olabilir
     }
+    return null;
   }
   function click() {
     if (!state.sound || !actx || actx.state !== 'running') return;
@@ -162,13 +163,57 @@
     g.connect(actx.destination); g.connect(adest);
     src.start();
   }
+
+  function updateSoundUI() {
+    const snd = !!state.sound;
+    const chk = $('#sound');
+    if (chk && chk.checked !== snd) chk.checked = snd;
+
+    const stageBtn = $('#stageSoundBtn');
+    if (stageBtn) {
+      stageBtn.classList.toggle('muted', !snd);
+      stageBtn.setAttribute('title', snd ? 'Sesi Kapat' : 'Sesi Aç');
+      stageBtn.setAttribute('aria-label', snd ? 'Sesi Kapat' : 'Sesi Aç');
+      const txt = stageBtn.querySelector('.btn-text');
+      if (txt) txt.textContent = snd ? 'Ses Açık' : 'Sesi Aç';
+    }
+
+    const trBtn = $('#soundToggleBtn');
+    if (trBtn) {
+      trBtn.classList.toggle('muted', !snd);
+      trBtn.setAttribute('title', snd ? 'Sesi Kapat' : 'Sesi Aç');
+      trBtn.setAttribute('aria-label', snd ? 'Sesi Kapat' : 'Sesi Aç');
+    }
+  }
+
+  function setSound(enabled) {
+    state.sound = !!enabled;
+    if (state.sound) {
+      const res = ensureAudio();
+      if (res && typeof res.then === 'function') {
+        res.then(() => {
+          if (state.sound && !state.playing) click();
+        });
+      } else if (!state.playing) {
+        click();
+      }
+    }
+    updateSoundUI();
+  }
+
   window.addEventListener('pointerdown', ensureAudio, { once: true });
   window.addEventListener('keydown', ensureAudio, { once: true });
 
   /* ---------- Zaman çizelgesi ---------- */
   let t0 = performance.now(), pausedAt = 0, lastIdx = -1, curT = 0;
   let isExporting = false;
-  const total = () => state.words.length * state.cuts * state.cutMs;
+  const total = () => {
+    if (state.theme === 'wordstamp') {
+      const wordDur = Math.max(300, state.cuts * state.cutMs);
+      return Math.max(1, state.words.length) * wordDur;
+    }
+    return state.words.length * state.cuts * state.cutMs;
+  };
 
   function frame(now) {
     requestAnimationFrame(frame);
@@ -226,6 +271,11 @@
         bctx.restore();
         ctx.drawImage(blurLayerCanvas, 0, 0);
       }
+
+      if (state.film) filmOverlay();
+      const T = total();
+      $('#bar').style.width = (t / T) * 100 + '%';
+      $('#timeLabel').textContent = `${(t / 1000).toFixed(1)} / ${(T / 1000).toFixed(1)}s`;
       return;
     }
 
@@ -593,7 +643,12 @@
     });
 
     $('#film').addEventListener('change', (e) => (state.film = e.target.checked));
-    $('#sound').addEventListener('change', (e) => { state.sound = e.target.checked; if (state.sound) ensureAudio(); });
+    $('#sound').addEventListener('change', (e) => setSound(e.target.checked));
+    const stageSoundBtn = $('#stageSoundBtn');
+    if (stageSoundBtn) stageSoundBtn.addEventListener('click', () => setSound(!state.sound));
+    const soundToggleBtn = $('#soundToggleBtn');
+    if (soundToggleBtn) soundToggleBtn.addEventListener('click', () => setSound(!state.sound));
+    updateSoundUI();
     $('#upper').addEventListener('change', (e) => { state.upper = e.target.checked; parseWords(); drawThumbs(); });
 
     $('#shuffleBtn').addEventListener('click', () => { if (!isExporting) shuffle(); });
@@ -684,7 +739,7 @@
     return null;
   }
 
-  async function generateClickAudio(totalMs, cutMs, totalCuts, sampleRate = 44100) {
+  async function generateClickAudio(totalMs, clickTimesSec, sampleRate = 44100) {
     const durSec = totalMs / 1000;
     const totalSamples = Math.max(1, Math.ceil(durSec * sampleRate));
     const OfflineCtxClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
@@ -693,8 +748,8 @@
     const offlineCtx = new OfflineCtxClass(2, totalSamples, sampleRate);
     const len = Math.floor(sampleRate * 0.045);
 
-    for (let idx = 0; idx < totalCuts; idx++) {
-      const startTime = (idx * cutMs) / 1000;
+    for (let idx = 0; idx < clickTimesSec.length; idx++) {
+      const startTime = clickTimesSec[idx];
       if (startTime >= durSec) break;
 
       const clickBuf = offlineCtx.createBuffer(1, len, sampleRate);
@@ -779,13 +834,25 @@
     let audioConfig = null;
     let renderedAudio = null;
     const totalMs = total();
-    const totalCuts = state.words.length * state.cuts;
 
     if (state.sound) {
       audioConfig = await findSupportedAudioConfig();
       if (audioConfig) {
         try {
-          renderedAudio = await generateClickAudio(totalMs, state.cutMs, totalCuts, audioConfig.sampleRate);
+          const clickTimesSec = [];
+          if (state.theme === 'wordstamp') {
+            const wordDur = Math.max(300, state.cuts * state.cutMs);
+            const numWords = Math.max(1, state.words.length);
+            for (let wi = 0; wi < numWords; wi++) {
+              clickTimesSec.push((wi * wordDur) / 1000);
+            }
+          } else {
+            const totalCuts = state.words.length * state.cuts;
+            for (let idx = 0; idx < totalCuts; idx++) {
+              clickTimesSec.push((idx * state.cutMs) / 1000);
+            }
+          }
+          renderedAudio = await generateClickAudio(totalMs, clickTimesSec, audioConfig.sampleRate);
         } catch (err) {
           console.warn('Ses grafiği oluşturulamadı, videosuz devam ediliyor:', err);
           renderedAudio = null;
